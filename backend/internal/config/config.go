@@ -79,9 +79,9 @@ func Load() *Config {
 		DBPassword:         requireEnv("DB_PASSWORD"),
 		RedisURL:           requireEnv("REDIS_URL"),
 		JWTSecret:          requireEnv("JWT_SECRET"),
-		GoogleClientID:     requireEnv("GOOGLE_CLIENT_ID"),
-		GoogleClientSecret: requireEnv("GOOGLE_CLIENT_SECRET"),
-		GoogleRedirectURL:  requireEnv("GOOGLE_REDIRECT_URL"),
+		GoogleClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		GoogleRedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
 		AppEnv:             getEnvOrDefault("APP_ENV", "development"),
 		Port:               getEnvOrDefault("PORT", "8080"),
 
@@ -100,8 +100,8 @@ func Load() *Config {
 		GoogleVisionEnabled: os.Getenv("GOOGLE_VISION_ENABLED") == "true",
 	}
 
-	cfg.JWTAccessTTLMinutes = requireEnvInt("JWT_ACCESS_TTL_MINUTES")
-	cfg.JWTRefreshTTLDays = requireEnvInt("JWT_REFRESH_TTL_DAYS")
+	cfg.JWTAccessTTLMinutes = envIntOrDefault("JWT_ACCESS_TTL_MINUTES", 60)
+	cfg.JWTRefreshTTLDays = envIntOrDefault("JWT_REFRESH_TTL_DAYS", 30)
 
 	// Rate limits — optional, fall back to safe defaults.
 	cfg.RateLimitAuthLogin = envIntOrDefault("RATE_LIMIT_AUTH_LOGIN", 10)
