@@ -136,14 +136,6 @@ func requireEnv(key string) string {
 	return v
 }
 
-func requireEnvInt(key string) int {
-	raw := requireEnv(key)
-	v, err := strconv.Atoi(raw)
-	if err != nil {
-		panic(fmt.Sprintf("config: environment variable %q must be an integer, got %q", key, raw))
-	}
-	return v
-}
 
 func getEnvOrDefault(key, defaultVal string) string {
 	if v := os.Getenv(key); v != "" {
