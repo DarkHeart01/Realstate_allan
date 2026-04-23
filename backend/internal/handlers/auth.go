@@ -67,12 +67,6 @@ type loginRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
-type authResponse struct {
-	AccessToken string `json:"access_token"`
-	TokenType   string `json:"token_type"`
-	ExpiresIn   int    `json:"expires_in"` // seconds
-}
-
 // ── Endpoints ─────────────────────────────────────────────────────────────────
 
 // Register handles POST /api/auth/register
@@ -218,8 +212,13 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch the user's Google profile
-	client := h.oauthConfig.Client(context.Background(), token)
-	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+	client := h.oauthConfig.Client(r.Context(), token)
+	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, "https://www.googleapis.com/oauth2/v2/userinfo", nil)
+	if err != nil {
+		respond.Error(w, http.StatusInternalServerError, "OAUTH_FAILED", "failed to build profile request")
+		return
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		respond.Error(w, http.StatusInternalServerError, "OAUTH_FAILED", "failed to fetch Google profile")
 		return

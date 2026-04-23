@@ -11,7 +11,7 @@ import "github.com/realestate/backend/internal/models"
 //   - owner_name  → ""
 //   - owner_contact → ""
 func ScrubForRole(role string, p *models.Property) {
-	if role == models.RoleSuperAdmin {
+	if p == nil || role == models.RoleSuperAdmin {
 		return
 	}
 	p.OwnerName = ""

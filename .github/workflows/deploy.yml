@@ -34,6 +34,16 @@ jobs:
           docker push ${{ env.IMAGE }}:${{ github.sha }}
           docker push ${{ env.IMAGE }}:latest
 
+      - name: Copy compose files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "infra/docker-compose.yml,infra/docker-compose.prod.yml,infra/nginx/nginx.conf"
+          target: /opt/realestate
+          strip_components: 1
+
       - name: Run DB migrations before deploy
         uses: appleboy/ssh-action@v1
         with:

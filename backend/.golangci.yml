@@ -6,7 +6,6 @@ linters:
     - ineffassign
     - staticcheck
     - unused
-    - gofmt
     - goimports
     - misspell
     - exhaustive
@@ -28,3 +27,6 @@ issues:
     # http.Get in share.go is a non-critical best-effort call.
     - path: internal/services/share\.go
       linters: [noctx]
+    # withSender is only called from tests (test injection helper).
+    - source: "func.*withSender"
+      linters: [unused]

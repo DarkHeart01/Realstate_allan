@@ -395,7 +395,6 @@ func buildCountQuery(f *ListFilter) (string, []interface{}) {
 	if f.AssignedBrokerID != nil {
 		fmt.Fprintf(&sb, ` AND assigned_broker_id = $%d`, n)
 		args = append(args, *f.AssignedBrokerID)
-		n++
 	}
 
 	return sb.String(), args

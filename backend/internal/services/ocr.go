@@ -220,8 +220,8 @@ var (
 	// Area patterns: 1200 sq ft / 1200 sqft / 1200 sq.m / 110 sqm
 	areaRe = regexp.MustCompile(`(?i)(\d[\d,\.]*)\s*(?:sq\.?\s*(?:ft|feet|m|meter|metre)|sqft|sqm)`)
 
-	// Indian phone: 10-digit starting with 6-9, with optional +91 or 0
-	phoneRe = regexp.MustCompile(`(?:(?:\+91|0)\s*)?[6-9]\d{9}`)
+	// Indian phone: 10-digit starting with 6-9, with optional +91, 91, or 0 prefix
+	phoneRe = regexp.MustCompile(`(?:(?:\+91|91|0)\s*)?[6-9]\d{9}`)
 )
 
 // parseOCRText extracts property field suggestions from raw OCR text.
@@ -269,6 +269,10 @@ func extractLargestPrice(text string) int64 {
 		}
 		raw := strings.ReplaceAll(m[1], ",", "")
 		raw = strings.TrimSpace(raw)
+		// Skip 10-digit numbers starting with 6-9 — almost certainly a phone number.
+		if len(raw) == 10 && raw[0] >= '6' && raw[0] <= '9' {
+			continue
+		}
 		f, err := strconv.ParseFloat(raw, 64)
 		if err != nil {
 			continue
