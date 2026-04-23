@@ -9,7 +9,7 @@ version: "3.9"
 
 services:
   api:
-    image: gcr.io/${GCP_PROJECT_ID}/realestate-api:${IMAGE_TAG}
+    image: ghcr.io/${REPO_OWNER}/realestate-api:${IMAGE_TAG}
     restart: unless-stopped
     logging:
       driver: "json-file"
@@ -18,7 +18,7 @@ services:
         max-file: "5"
 
   worker:
-    image: gcr.io/${GCP_PROJECT_ID}/realestate-api:${IMAGE_TAG}
+    image: ghcr.io/${REPO_OWNER}/realestate-api:${IMAGE_TAG}
     restart: unless-stopped
     logging:
       driver: "json-file"

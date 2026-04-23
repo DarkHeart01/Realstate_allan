@@ -7,28 +7,29 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v2
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker --quiet
-
-      - name: Build and push API image to GCR
+      - name: Build and push API image
         run: |
           docker build \
             --build-arg BUILD_SHA=${{ github.sha }} \
-            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/realestate-api:${{ github.sha }} \
+            -t ghcr.io/${{ github.repository_owner }}/realestate-api:${{ github.sha }} \
+            -t ghcr.io/${{ github.repository_owner }}/realestate-api:latest \
             ./backend
-          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/realestate-api:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository_owner }}/realestate-api:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository_owner }}/realestate-api:latest
 
       - name: Run DB migrations before deploy
         uses: appleboy/ssh-action@v1
@@ -37,14 +38,14 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             cd /opt/realestate
-            gcloud auth configure-docker --quiet
             docker run --rm \
-              --env-file .env \
-              gcr.io/${{ secrets.GCP_PROJECT_ID }}/realestate-api:${{ github.sha }} \
+              --env-file /opt/.env \
+              ghcr.io/${{ github.repository_owner }}/realestate-api:${{ github.sha }} \
               /usr/local/bin/golang-migrate \
                 -path /migrations \
-                -database "$(grep '^DATABASE_URL' .env | cut -d= -f2-)" \
+                -database "$(grep '^DATABASE_URL' /opt/.env | cut -d= -f2-)" \
                 up
 
       - name: Deploy new containers to VPS
@@ -56,18 +57,18 @@ jobs:
           script: |
             cd /opt/realestate
             export IMAGE_TAG=${{ github.sha }}
-            export GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
+            export REPO_OWNER=${{ github.repository_owner }}
             docker compose -f docker-compose.yml -f docker-compose.prod.yml pull api worker
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps api worker
 
             for i in $(seq 1 6); do
               sleep 5
               if curl -sf http://localhost:8080/health; then
-                echo "Deploy successful (attempt $i)"
+                echo "Deploy successful"
                 exit 0
               fi
             done
 
-            echo "Health check failed after 30s — rolling back"
+            echo "Health check failed — rolling back"
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --scale api=0 api
             exit 1
