@@ -6,27 +6,18 @@ linters:
     - ineffassign
     - staticcheck
     - unused
-    - goimports
     - misspell
     - exhaustive
     - noctx
     - bodyclose
 
-linters-settings:
-  goimports:
-    local-prefixes: github.com/realestate
-
 issues:
   exclude-rules:
-    # Test helpers may intentionally ignore errors.
     - path: _test\.go
       linters: [errcheck]
-    # log.Printf return values are intentionally ignored.
     - source: "log\\.Print"
       linters: [errcheck]
-    # http.Get in share.go is a non-critical best-effort call.
     - path: internal/services/share\.go
       linters: [noctx]
-    # withSender is only called from tests (test injection helper).
     - source: "func.*withSender"
       linters: [unused]

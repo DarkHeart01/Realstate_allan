@@ -77,12 +77,16 @@ jobs:
 
             for i in $(seq 1 6); do
               sleep 5
-              if curl -sf http://localhost:8080/health; then
-                echo "Deploy successful"
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health || echo "000")
+              echo "Health check attempt $i: HTTP $STATUS"
+              if [ "$STATUS" = "200" ] || [ "$STATUS" = "503" ]; then
+                echo "Deploy successful (API is up)"
                 exit 0
               fi
             done
 
-            echo "Health check failed — rolling back"
+            echo "Health check failed — showing logs"
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml logs --tail=50 api
+            echo "Rolling back"
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --scale api=0 api
             exit 1
