@@ -44,6 +44,7 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             cd /opt/realestate
             docker run --rm \
+              --network realestate_default \
               --env-file /opt/.env \
               ${{ env.IMAGE }}:${{ github.sha }} \
               /usr/local/bin/golang-migrate \
