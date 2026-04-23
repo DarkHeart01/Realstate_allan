@@ -1,0 +1,61 @@
+# app/pubspec.yaml
+name: realestate_app
+description: Internal real estate management platform for brokers.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Navigation
+  go_router: ^17.1.0
+
+  # State management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.3.5
+
+  # Networking
+  dio: ^5.6.0
+
+  # Secure storage (JWT, tokens)
+  flutter_secure_storage: ^10.0.0
+
+  # Google Sign-In
+  google_sign_in: ^7.2.0
+
+  # Image handling
+  cached_network_image: ^3.3.1
+  image_picker: ^1.1.2
+
+  # Sharing
+  share_plus: 12.0.2
+  url_launcher: ^6.3.0
+
+  # Maps & location
+  google_maps_flutter: ^2.7.0
+  geolocator: 12.0.0
+  permission_handler: ^12.0.1
+
+  # File export (CSV download)
+  path_provider: ^2.1.4
+  open_filex: ^4.4.1
+
+  # Internationalisation (Indian number/currency format)
+  intl: ^0.20.2
+
+  # Icons
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.11
+  riverpod_generator: ^2.4.3
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,67 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and push API image to GCR
+        run: |
+          echo "${{ secrets.GCP_SA_KEY }}" \
+            | docker login -u _json_key --password-stdin https://gcr.io
+          docker build \
+            --build-arg BUILD_SHA=${{ github.sha }} \
+            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/realestate-api:${{ github.sha }} \
+            ./backend
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/realestate-api:${{ github.sha }}
+
+      - name: Run DB migrations before deploy
+        # SSH into the VPS and run migrations BEFORE swapping containers.
+        # A failed migration exits non-zero here, aborting the deploy — the old
+        # container remains up and serving traffic.
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/realestate
+            docker run --rm \
+              --env-file .env \
+              gcr.io/${{ secrets.GCP_PROJECT_ID }}/realestate-api:${{ github.sha }} \
+              /usr/local/bin/golang-migrate \
+                -path /migrations \
+                -database "$(grep '^DATABASE_URL' .env | cut -d= -f2-)" \
+                up
+
+      - name: Deploy new containers to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/realestate
+            export IMAGE_TAG=${{ github.sha }}
+            export GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
+            docker compose pull api worker
+            docker compose up -d --no-deps api worker
+
+            # Health check — wait up to 30s for the new container to be healthy.
+            for i in $(seq 1 6); do
+              sleep 5
+              if curl -sf http://localhost:8080/health; then
+                echo "Deploy successful (attempt $i)"
+                exit 0
+              fi
+            done
+
+            echo "Health check failed after 30s — rolling back"
+            docker compose up -d --no-deps --scale api=0 api
+            exit 1

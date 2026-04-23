@@ -1,0 +1,74 @@
+# infra/docker-compose.prod.yml
+# Production overrides — used with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Variables expected in /opt/realestate/.env on the VPS:
+#   IMAGE_TAG       — git SHA of the deployed image (set by CI)
+#   GCP_PROJECT_ID  — GCP project ID for GCR image path
+version: "3.9"
+
+services:
+  api:
+    image: gcr.io/${GCP_PROJECT_ID}/realestate-api:${IMAGE_TAG}
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  worker:
+    image: gcr.io/${GCP_PROJECT_ID}/realestate-api:${IMAGE_TAG}
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  postgres:
+    restart: unless-stopped
+    # Remove the host port binding — postgres is only accessible within the
+    # Docker network in production.
+    ports: []
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/backup.sh:/backup.sh:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    restart: unless-stopped
+    # Remove the host port binding in production.
+    ports: []
+    volumes:
+      - redis_data:/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx:
+    restart: unless-stopped
+
+  # Asynqmon is internal-only — NOT exposed on a public port in production.
+  # Access via SSH tunnel:
+  #   ssh -L 8082:localhost:8082 deploy@VPS_HOST
+  #   then open http://localhost:8082 in your browser.
+  asynqmon:
+    image: hibiken/asynqmon:latest
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://redis:6379
+    # Override to remove the 8082 port binding from the base compose file.
+    ports: []
+    depends_on:
+      - redis
+
+volumes:
+  postgres_data:
+  redis_data:

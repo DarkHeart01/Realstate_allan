@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "academic-being-430412-t2",
+  "private_key_id": "5d40de50477aeb0d175d51f56cfe011882f139fa",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCidlXExinz6A48\nBVpMemU6bsSf8R0ewFVsaDgi57OvIGOxvY9Y8StbCV5Pbd8F8zRKlqf0tG5wbh+p\npzLVM6ajg80oq0SYSnKlpb4OYXO5L+LQjDW3oGlB6soo+D2OPZ6Nu8sWhGjifob9\nmQIH7bxX4GHYc5fe3zoaHhF8F/KsiRTg59+MiUe/SMk0A1A9JRiOY5NkW4+ahGN/\nFY5najOXz53oJOgViUMcQXyQ1BpjDWxsqs0RzVr2b0XOuNkO0KWmCX6yco+Zv6c+\nCitNumxSRLC4ClNyObdcnwfqTanRpQdP7uGQlx4wuC5BDxemp0m2HZDmZCGRDy5v\nyTTLwk8RAgMBAAECggEAQqQt7Iio/t8Kr742Wza9vWlgiIc8PbgBknVxyYen4kdz\n/Z3XZlGPSkmegRB9spAfvBTukmdNAht6K3plVKVaTqqrBmqyuZGYU7CYNIfvE2C8\nNnW9NzS62Io6IPIrNeS63ELTPMpVx8rFDtOrzJrNbnKhUEuiWY7R45K/81pTdkgh\ndv4oYoW2zb051wQPGrE3RncPH+7BnMwX5ipUTw7cGQmp/lvV/vkOQ0WsT05UlHlX\nFh/3xUVsZainCBuVFxny0xgZQskMhRnl+R3dT6iBE7erXNe5Udsfyia9+Z41yrTg\nPLgK8lvYwmX2+e+6UsG87AYN7VVhjWyLjslv30YsnQKBgQDTjdvGazjBAgWi3ru+\n0m912Omwbz4MVQ3lCyap46dJMralV/glKwOVxzDNIPBKSPGxME1v/TwxXrhJB25W\nOQl9Wlbc07xSt+06TgRJ+yb5jkNqBG8AUY4nBCroikYVC7r3grmEblsAHua2CQye\nXhT3y9SwnATUvoYtXCFt8/6ciwKBgQDEmCNs4E+0SrQQoOQhX+N86BiKF16nFzRE\nIhLO0+TJWhndpGSs8u4mHZ1luzCOy/52cGV/PHS7D7NwOZsUxjBYq7xEFN/SHJU2\nbeL8GHXdGDKwXuHND5UG4c38zdqLTuvVX7aXNYoWrXhcmCAk6EbnI44AkaWnvOh4\nTGRXAqxqUwKBgQCCT8KN4WQPN6CjJ5H8RAGWVOv120AcNpQdfxXs1icoZo2tIZff\nxTQrIYyE/oIlL/N40qkQj6txOchIa8RiZjXbOjeBRQee6F6/aGkp7QOf+yq5dkut\npY7rp5yKqwnqUtRzO9nsolF5rI8umDpmnstJrAuyUhiDt2xNKpAI+5/dawKBgQDB\nUxbrFz5p/lhKTd1pEIGFsDuJeGfFCqWEJrm2GFtQwkDTW7kA9jfI1bCVfNnIYsRO\nNkMpNwtXdJ4xSwS9DhQ27lLJ5HkhhqgZCUCARZGKJSSbmgKUg7E6Pk0xQEGcYrS5\ndFD7K1Qq7tWAwLxDbwNigu0+k/uCEtvMiNrXUbK5LwKBgET3BB19BA+/DPdp8eNZ\nuvR24d9713QieomygN9oLnSUCO78AIJnsyR02IdTA+7Q3ec6utKsGYOE2MtQJR4M\nlXNB8tmsIpKPxqXFut5dNG5DBSO9/dX4N1Mze6WSL1qkZ5qiyYBPms12XccD1vE8\nb8Xudo9kyOfsMjYAqCpASZbe\n-----END PRIVATE KEY-----\n",
+  "client_email": "storage-admin@academic-being-430412-t2.iam.gserviceaccount.com",
+  "client_id": "111745278648999954616",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/storage-admin%40academic-being-430412-t2.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
