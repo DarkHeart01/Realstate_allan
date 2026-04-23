@@ -1,4 +1,5 @@
 // test/widgets/brokerage_calculator_test.dart
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,16 +9,13 @@ import 'package:realestate_app/features/calculator/screens/calculator_screen.dar
 
 // ── Fake notifier ─────────────────────────────────────────────────────────────
 
-class _FakeCalcNotifier extends StateNotifier<CalculatorState> {
-  _FakeCalcNotifier(super.initial);
+class _FakeCalcNotifier extends CalculatorNotifier {
+  _FakeCalcNotifier(CalculatorState initial) : super(Dio()) {
+    state = initial;
+  }
 
   @override
   Future<void> calculate() async {}
-  void setMode(CalcMode m) => state = state.copyWith(mode: m);
-  void setPropertyValue(double v) => state = state.copyWith(propertyValue: v);
-  void setMonthlyRent(double v) => state = state.copyWith(monthlyRent: v);
-  void setCommissionRate(double v) => state = state.copyWith(commissionRate: v);
-  void setSplitRatio(String v) => state = state.copyWith(splitRatio: v);
 }
 
 Widget _buildScreen(CalculatorState initial) {

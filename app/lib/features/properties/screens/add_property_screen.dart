@@ -274,13 +274,7 @@ class _Step2State extends ConsumerState<_Step2> {
                       zoom: 15,
                     ),
                     onMapCreated: (ctrl) => _mapController = ctrl,
-                    onCameraIdle: () async {
-                      if (_mapController == null) return;
-                      final pos = await _mapController!.getLatLng(
-                        const ScreenCoordinate(x: 0, y: 0),
-                      );
-                      // Use camera position tracking via onCameraMove instead.
-                    },
+                    onCameraIdle: () {},
                     onCameraMove: _onCameraIdle,
                     zoomControlsEnabled: true,
                     myLocationButtonEnabled: true,

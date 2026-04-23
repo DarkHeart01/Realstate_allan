@@ -39,9 +39,8 @@ Dio createDioClient() {
 /// Attaches the stored Bearer token to outgoing requests.
 /// Phase 2 will add automatic token refresh on 401.
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor(this._dio);
+  AuthInterceptor(Dio dio);
 
-  final Dio _dio;
   final _storage = const FlutterSecureStorage();
 
   @override
