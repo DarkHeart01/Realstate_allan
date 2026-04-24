@@ -418,8 +418,9 @@ func TestDeleteProperty_Broker(t *testing.T) {
 	}, adminJWT)
 	propID := createBody["data"].(map[string]interface{})["id"].(string)
 
+	// Delete is now open to all authenticated users (SUPER_ADMIN restriction removed).
 	status, _ := testutil.MustRequest(t, srv, http.MethodDelete, "/api/properties/"+propID, nil, brokerJWT)
-	assert.Equal(t, http.StatusForbidden, status)
+	assert.Equal(t, http.StatusOK, status)
 }
 
 // ── SQL Injection ─────────────────────────────────────────────────────────────
