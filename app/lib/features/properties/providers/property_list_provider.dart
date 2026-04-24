@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/dio_client.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../models/property.dart';
 
 // ── Filter params ─────────────────────────────────────────────────────────────
@@ -110,9 +111,12 @@ class PropertyListState {
 // ── Notifier ──────────────────────────────────────────────────────────────────
 
 class PropertyListNotifier extends StateNotifier<PropertyListState> {
-  PropertyListNotifier() : super(const PropertyListState());
+  PropertyListNotifier(this._ref) : super(const PropertyListState());
 
-  final _dio = createDioClient();
+  final Ref _ref;
+  late final _dio = createDioClient(
+    onUnauthorized: () => _ref.read(authProvider.notifier).logout(),
+  );
 
   Future<void> refresh() async {
     state = state.copyWith(isLoading: true, offset: 0, error: null);
@@ -210,5 +214,5 @@ class PropertyListNotifier extends StateNotifier<PropertyListState> {
 
 final propertyListProvider =
     StateNotifierProvider<PropertyListNotifier, PropertyListState>(
-  (ref) => PropertyListNotifier(),
+  (ref) => PropertyListNotifier(ref),
 );

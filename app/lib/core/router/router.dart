@@ -67,12 +67,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.login,
         name: 'login',
-        builder: (context, state) => const LoginScreen(),
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: LoginScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.register,
         name: 'register',
-        builder: (context, state) => const _PlaceholderScreen(title: 'Register'),
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: _PlaceholderScreen(title: 'Register'),
+        ),
       ),
 
       // ── Shell with four bottom-nav branches ──────────────────────────────

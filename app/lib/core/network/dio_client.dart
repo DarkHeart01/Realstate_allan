@@ -1,19 +1,17 @@
-// app/lib/core/network/dio_client.dart
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// Key used to store the JWT access token in secure storage.
 const _kAccessTokenKey = 'access_token';
 
 /// Creates and configures the application's [Dio] HTTP client.
 ///
-/// - Base URL is read from the compile-time `API_BASE_URL` dart-define.
-/// - The [AuthInterceptor] attaches the stored JWT to every request.
-/// - In Phase 2 the interceptor will handle 401 → token refresh automatically.
-Dio createDioClient() {
+/// [onUnauthorized] is called when any request receives a 401 response —
+/// use this to trigger logout from a Riverpod notifier.
+Dio createDioClient({VoidCallback? onUnauthorized}) {
   const baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8080', // Android emulator → host machine
+    defaultValue: 'http://10.0.2.2:8080',
   );
 
   final dio = Dio(
@@ -29,18 +27,19 @@ Dio createDioClient() {
   );
 
   dio.interceptors.addAll([
-    AuthInterceptor(dio),
+    AuthInterceptor(onUnauthorized: onUnauthorized),
     LogInterceptor(requestBody: true, responseBody: true),
   ]);
 
   return dio;
 }
 
-/// Attaches the stored Bearer token to outgoing requests.
-/// Phase 2 will add automatic token refresh on 401.
+/// Attaches the stored Bearer token to outgoing requests and auto-logs out
+/// on 401 (expired / invalid token).
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor(Dio dio);
+  AuthInterceptor({this.onUnauthorized});
 
+  final VoidCallback? onUnauthorized;
   final _storage = const FlutterSecureStorage();
 
   @override
@@ -55,6 +54,12 @@ class AuthInterceptor extends Interceptor {
     handler.next(options);
   }
 
-  // TODO Phase 2: implement onError to detect 401 and refresh the access token
-  // transparently before retrying the original request.
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    if (err.response?.statusCode == 401) {
+      _storage.delete(key: _kAccessTokenKey);
+      onUnauthorized?.call();
+    }
+    handler.next(err);
+  }
 }

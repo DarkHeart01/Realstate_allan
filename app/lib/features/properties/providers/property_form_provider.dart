@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/dio_client.dart';
+import '../../auth/providers/auth_provider.dart';
 
 // ── Form state ────────────────────────────────────────────────────────────────
 
@@ -134,9 +135,12 @@ class PhotoUploadState {
 // ── Notifier ──────────────────────────────────────────────────────────────────
 
 class PropertyFormNotifier extends StateNotifier<PropertyFormState> {
-  PropertyFormNotifier() : super(const PropertyFormState());
+  PropertyFormNotifier(this._ref) : super(const PropertyFormState());
 
-  final _dio = createDioClient();
+  final Ref _ref;
+  late final _dio = createDioClient(
+    onUnauthorized: () => _ref.read(authProvider.notifier).logout(),
+  );
 
   void update(PropertyFormState Function(PropertyFormState) updater) {
     state = updater(state);
@@ -296,5 +300,5 @@ class PropertyFormNotifier extends StateNotifier<PropertyFormState> {
 
 final propertyFormProvider =
     StateNotifierProvider<PropertyFormNotifier, PropertyFormState>(
-  (ref) => PropertyFormNotifier(),
+  (ref) => PropertyFormNotifier(ref),
 );
