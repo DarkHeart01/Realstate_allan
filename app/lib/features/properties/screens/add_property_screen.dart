@@ -31,6 +31,16 @@ class _AddPropertyScreenState extends ConsumerState<AddPropertyScreen> {
   static const _totalSteps = 6;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.editPropertyId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(propertyFormProvider.notifier).loadForEdit(widget.editPropertyId!);
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
@@ -83,7 +93,7 @@ class _AddPropertyScreenState extends ConsumerState<AddPropertyScreen> {
           _Step1(onNext: _next),
           _Step2(onNext: _next),
           _Step3(onNext: _next),
-          _Step4(onNext: _next),
+          _Step4(onNext: _next, editPropertyId: widget.editPropertyId),
           _Step5(onNext: _next),
           _Step6(onSuccess: () {
             context.pop();
@@ -379,6 +389,14 @@ class _Step3State extends ConsumerState<_Step3> {
   Widget build(BuildContext context) {
     final notifier = ref.read(propertyFormProvider.notifier);
 
+    // Sync controllers when autofill (from step 4) updates state externally.
+    ref.listen<PropertyFormState>(propertyFormProvider, (prev, next) {
+      if (_price.text != next.price) _price.text = next.price;
+      if (_ownerContact.text != next.ownerContact) _ownerContact.text = next.ownerContact;
+      if (_plotArea.text != next.plotArea) _plotArea.text = next.plotArea;
+      if (_builtUp.text != next.builtUpArea) _builtUp.text = next.builtUpArea;
+    });
+
     return _StepWrapper(
       onNext: () {
         notifier.update((s) => s.copyWith(
@@ -388,6 +406,14 @@ class _Step3State extends ConsumerState<_Step3> {
               plotArea: _plotArea.text,
               builtUpArea: _builtUp.text,
             ));
+        // Early-create the property so photos can be uploaded immediately on step 4.
+        final s = ref.read(propertyFormProvider);
+        if (s.createdPropertyId == null &&
+            _ownerName.text.isNotEmpty &&
+            _ownerContact.text.isNotEmpty &&
+            (double.tryParse(_price.text) ?? 0) > 0) {
+          notifier.createProperty();
+        }
         widget.onNext();
       },
       child: StatefulBuilder(
@@ -444,8 +470,9 @@ class _Step3State extends ConsumerState<_Step3> {
 // ── Step 4: Photos ────────────────────────────────────────────────────────────
 
 class _Step4 extends ConsumerStatefulWidget {
-  const _Step4({required this.onNext});
+  const _Step4({required this.onNext, this.editPropertyId});
   final VoidCallback onNext;
+  final String? editPropertyId;
 
   @override
   ConsumerState<_Step4> createState() => _Step4State();
@@ -457,7 +484,7 @@ class _Step4State extends ConsumerState<_Step4> {
 
   Future<void> _runAutofill(BuildContext context, int photoIndex) async {
     final form = ref.read(propertyFormProvider);
-    final propertyId = form.createdPropertyId;
+    final propertyId = form.createdPropertyId ?? widget.editPropertyId;
     final photo = form.photos[photoIndex];
 
     if (propertyId == null || photo.photoId == null) return;
@@ -551,7 +578,12 @@ class _Step4State extends ConsumerState<_Step4> {
   Widget build(BuildContext context) {
     final form = ref.watch(propertyFormProvider);
     final notifier = ref.read(propertyFormProvider.notifier);
-    final canAutofill = form.createdPropertyId != null;
+    final effectivePropertyId = form.createdPropertyId ?? widget.editPropertyId;
+    final canAutofill = effectivePropertyId != null;
+
+    final hintText = canAutofill
+        ? 'Add photos and tap ✨ Autofill to extract price, area & contact.'
+        : 'Fill in Step 3 (owner name, contact, price) to enable Autofill.';
 
     return _StepWrapper(
       nextLabel: 'Continue',
@@ -559,10 +591,7 @@ class _Step4State extends ConsumerState<_Step4> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Photos will be uploaded after the property is created.',
-            style: TextStyle(color: Colors.grey),
-          ),
+          Text(hintText, style: const TextStyle(color: Colors.grey)),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             icon: const Icon(Icons.add_photo_alternate_outlined),
@@ -570,8 +599,17 @@ class _Step4State extends ConsumerState<_Step4> {
             onPressed: () async {
               final picker = ImagePicker();
               final images = await picker.pickMultiImage();
+              final startIndex = ref.read(propertyFormProvider).photos.length;
               for (final img in images) {
                 notifier.addPhoto(File(img.path));
+              }
+              // Auto-upload immediately if property already exists.
+              final pid = ref.read(propertyFormProvider).createdPropertyId ?? widget.editPropertyId;
+              if (pid != null) {
+                final count = ref.read(propertyFormProvider).photos.length;
+                for (var i = startIndex; i < count; i++) {
+                  notifier.uploadPhoto(pid, i);
+                }
               }
             },
           ),
@@ -602,8 +640,9 @@ class _Step4State extends ConsumerState<_Step4> {
                         Expanded(
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: Image.file(photo.file, fit: BoxFit.cover,
-                                width: double.infinity),
+                            child: photo.file != null
+                                ? Image.file(photo.file!, fit: BoxFit.cover, width: double.infinity)
+                                : Image.network(photo.cdnUrl!, fit: BoxFit.cover, width: double.infinity),
                           ),
                         ),
                         if (showAutofill)

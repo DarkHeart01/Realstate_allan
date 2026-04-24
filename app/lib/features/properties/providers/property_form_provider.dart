@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/dio_client.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../models/property.dart';
 
 // ── Form state ────────────────────────────────────────────────────────────────
 
@@ -102,14 +103,17 @@ class PropertyFormState {
 enum PhotoUploadStatus { pending, uploading, confirmed, failed }
 
 class PhotoUploadState {
-  final File file;
+  // null for photos loaded from the server (edit mode / already on GCS).
+  final File? file;
   final String? photoId;
   final String? cdnUrl;
   final PhotoUploadStatus status;
   final double progress;
 
+  bool get isNetworkPhoto => file == null;
+
   const PhotoUploadState({
-    required this.file,
+    this.file,
     this.photoId,
     this.cdnUrl,
     this.status = PhotoUploadStatus.pending,
@@ -166,16 +170,98 @@ class PropertyFormNotifier extends StateNotifier<PropertyFormState> {
     state = state.copyWith(photos: updated);
   }
 
+  /// Load an existing property into the form for editing.
+  /// Sets createdPropertyId so OCR and uploads work immediately.
+  Future<void> loadForEdit(String propertyId) async {
+    try {
+      final res = await _dio.get('/api/properties/$propertyId');
+      final data = res.data['data'] as Map<String, dynamic>;
+      final property = Property.fromJson(data);
+
+      final photos = property.photos
+          .where((p) => p.status == 'CONFIRMED')
+          .map((p) => PhotoUploadState(
+                file: null,
+                photoId: p.id,
+                cdnUrl: p.cdnUrl,
+                status: PhotoUploadStatus.confirmed,
+                progress: 1.0,
+              ))
+          .toList();
+
+      state = PropertyFormState(
+        listingCategory: property.listingCategory,
+        propertyType: property.propertyType,
+        isDirectOwner: property.isDirectOwner,
+        assignedBrokerId: property.assignedBrokerId,
+        locationLat: property.locationLat.toString(),
+        locationLng: property.locationLng.toString(),
+        description: property.description ?? '',
+        ownerName: property.ownerName,
+        ownerContact: property.ownerContact,
+        price: property.price.toStringAsFixed(0),
+        plotArea: property.plotArea?.toStringAsFixed(0) ?? '',
+        builtUpArea: property.builtUpArea?.toStringAsFixed(0) ?? '',
+        photos: photos,
+        tags: List<String>.from(property.tags),
+        createdPropertyId: propertyId,
+      );
+    } catch (_) {
+      // Silently fail — form remains empty so user can fill manually.
+    }
+  }
+
+  /// Creates the property on the server and stores the ID.
+  /// Returns true on success. Safe to call if already created (no-op).
+  Future<bool> createProperty() async {
+    if (state.createdPropertyId != null) return true;
+
+    final parsedPrice = double.tryParse(state.price);
+    if (state.ownerName.trim().isEmpty ||
+        state.ownerContact.trim().isEmpty ||
+        parsedPrice == null ||
+        parsedPrice <= 0) {
+      return false;
+    }
+
+    try {
+      final body = <String, dynamic>{
+        'listing_category': state.listingCategory,
+        'property_type': state.propertyType,
+        'owner_name': state.ownerName,
+        'owner_contact': state.ownerContact,
+        'price': parsedPrice,
+        'location_lat': double.tryParse(state.locationLat) ?? 0,
+        'location_lng': double.tryParse(state.locationLng) ?? 0,
+        'is_direct_owner': state.isDirectOwner,
+        'tags': state.tags,
+        if (state.description.isNotEmpty) 'description': state.description,
+        if (state.plotArea.isNotEmpty) 'plot_area': double.tryParse(state.plotArea),
+        if (state.builtUpArea.isNotEmpty) 'built_up_area': double.tryParse(state.builtUpArea),
+        if (state.assignedBrokerId != null) 'assigned_broker_id': state.assignedBrokerId,
+      };
+      final res = await _dio.post('/api/properties', data: body);
+      final propertyId = res.data['data']['id'] as String;
+      state = state.copyWith(createdPropertyId: propertyId);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Upload a photo at [index] to GCS via the presign flow.
   /// IMPORTANT: the PUT to GCS uses a plain Dio instance (no Authorization header)
   /// because GCS V4 signed URLs are self-authenticating.
+  /// Network photos (from edit mode) are skipped — they're already on GCS.
   Future<void> uploadPhoto(String propertyId, int index) async {
     final photo = state.photos[index];
+    if (photo.isNetworkPhoto) return;
+
     _updatePhoto(index, photo.copyWith(status: PhotoUploadStatus.uploading, progress: 0));
 
     try {
       // 1. Get signed URL from API.
-      final filename = photo.file.path.split('/').last;
+      final filename = photo.file!.path.split('/').last;
       final ext = filename.split('.').last.toLowerCase();
       final contentType = ext == 'png'
           ? 'image/png'
@@ -192,7 +278,7 @@ class PropertyFormNotifier extends StateNotifier<PropertyFormState> {
       final uploadUrl = presignData['upload_url'] as String;
       final cdnUrl = presignData['cdn_url'] as String;
 
-      _updatePhoto(index, photo.copyWith(
+      _updatePhoto(index, state.photos[index].copyWith(
         photoId: photoId,
         cdnUrl: cdnUrl,
         status: PhotoUploadStatus.uploading,
@@ -203,11 +289,11 @@ class PropertyFormNotifier extends StateNotifier<PropertyFormState> {
       final gcsDio = Dio();
       await gcsDio.put(
         uploadUrl,
-        data: photo.file.openRead(),
+        data: photo.file!.openRead(),
         options: Options(
           headers: {
             'Content-Type': contentType,
-            'Content-Length': await photo.file.length(),
+            'Content-Length': await photo.file!.length(),
           },
         ),
         onSendProgress: (sent, total) {
@@ -239,9 +325,9 @@ class PropertyFormNotifier extends StateNotifier<PropertyFormState> {
     state = state.copyWith(photos: photos);
   }
 
-  /// Submit the form. Creates the property, then uploads pending photos.
+  /// Submit the form. Creates the property (if not already done), then uploads
+  /// any pending photos.
   Future<void> submit() async {
-    // Client-side validation before hitting the network.
     if (state.ownerName.trim().isEmpty) {
       state = state.copyWith(submitError: 'Owner name is required (fill in Step 3)');
       return;
@@ -259,30 +345,54 @@ class PropertyFormNotifier extends StateNotifier<PropertyFormState> {
     state = state.copyWith(isSubmitting: true, submitError: null);
 
     try {
-      final body = <String, dynamic>{
-        'listing_category': state.listingCategory,
-        'property_type': state.propertyType,
-        'owner_name': state.ownerName,
-        'owner_contact': state.ownerContact,
-        'price': double.tryParse(state.price) ?? 0,
-        'location_lat': double.tryParse(state.locationLat) ?? 0,
-        'location_lng': double.tryParse(state.locationLng) ?? 0,
-        'is_direct_owner': state.isDirectOwner,
-        'tags': state.tags,
-        if (state.description.isNotEmpty) 'description': state.description,
-        if (state.plotArea.isNotEmpty) 'plot_area': double.tryParse(state.plotArea),
-        if (state.builtUpArea.isNotEmpty) 'built_up_area': double.tryParse(state.builtUpArea),
-        if (state.assignedBrokerId != null) 'assigned_broker_id': state.assignedBrokerId,
-      };
-
-      final res = await _dio.post('/api/properties', data: body);
-      final propertyId = res.data['data']['id'] as String;
+      // Use early-created property if available, otherwise create now.
+      String propertyId;
+      if (state.createdPropertyId != null) {
+        propertyId = state.createdPropertyId!;
+        // PATCH with latest form data in case it changed after early creation.
+        await _dio.patch('/api/properties/$propertyId', data: <String, dynamic>{
+          'listing_category': state.listingCategory,
+          'property_type': state.propertyType,
+          'owner_name': state.ownerName,
+          'owner_contact': state.ownerContact,
+          'price': parsedPrice,
+          'location_lat': double.tryParse(state.locationLat) ?? 0,
+          'location_lng': double.tryParse(state.locationLng) ?? 0,
+          'is_direct_owner': state.isDirectOwner,
+          'tags': state.tags,
+          if (state.description.isNotEmpty) 'description': state.description,
+          if (state.plotArea.isNotEmpty) 'plot_area': double.tryParse(state.plotArea),
+          if (state.builtUpArea.isNotEmpty) 'built_up_area': double.tryParse(state.builtUpArea),
+          if (state.assignedBrokerId != null) 'assigned_broker_id': state.assignedBrokerId,
+        });
+      } else {
+        final body = <String, dynamic>{
+          'listing_category': state.listingCategory,
+          'property_type': state.propertyType,
+          'owner_name': state.ownerName,
+          'owner_contact': state.ownerContact,
+          'price': parsedPrice,
+          'location_lat': double.tryParse(state.locationLat) ?? 0,
+          'location_lng': double.tryParse(state.locationLng) ?? 0,
+          'is_direct_owner': state.isDirectOwner,
+          'tags': state.tags,
+          if (state.description.isNotEmpty) 'description': state.description,
+          if (state.plotArea.isNotEmpty) 'plot_area': double.tryParse(state.plotArea),
+          if (state.builtUpArea.isNotEmpty) 'built_up_area': double.tryParse(state.builtUpArea),
+          if (state.assignedBrokerId != null) 'assigned_broker_id': state.assignedBrokerId,
+        };
+        final res = await _dio.post('/api/properties', data: body);
+        propertyId = res.data['data']['id'] as String;
+      }
 
       state = state.copyWith(createdPropertyId: propertyId, isSubmitting: false);
 
-      // Upload all selected photos.
+      // Upload only photos that are still pending (not already uploaded).
       for (var i = 0; i < state.photos.length; i++) {
-        await uploadPhoto(propertyId, i);
+        if (state.photos[i].status == PhotoUploadStatus.pending ||
+            state.photos[i].status == PhotoUploadStatus.failed) {
+          await uploadPhoto(propertyId, i);
+        }
       }
     } catch (e) {
       String msg = e.toString();
