@@ -9,18 +9,26 @@ const _kAccessTokenKey = 'access_token';
 class AuthState {
   final bool isLoggedIn;
   final bool isLoading;
+  final bool isInitializing;
   final String? error;
 
   const AuthState({
     this.isLoggedIn = false,
     this.isLoading = false,
+    this.isInitializing = true,
     this.error,
   });
 
-  AuthState copyWith({bool? isLoggedIn, bool? isLoading, String? error}) =>
+  AuthState copyWith({
+    bool? isLoggedIn,
+    bool? isLoading,
+    bool? isInitializing,
+    String? error,
+  }) =>
       AuthState(
         isLoggedIn: isLoggedIn ?? this.isLoggedIn,
         isLoading: isLoading ?? this.isLoading,
+        isInitializing: isInitializing ?? this.isInitializing,
         error: error,
       );
 }
@@ -35,7 +43,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> _checkToken() async {
     final token = await _storage.read(key: _kAccessTokenKey);
-    state = state.copyWith(isLoggedIn: token != null && token.isNotEmpty);
+    state = state.copyWith(
+      isLoggedIn: token != null && token.isNotEmpty,
+      isInitializing: false,
+    );
   }
 
   Future<void> login(String email, String password) async {
