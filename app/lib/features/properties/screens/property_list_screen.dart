@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../features/auth/providers/auth_provider.dart';
 import '../providers/property_list_provider.dart';
 import '../widgets/property_card.dart';
 
@@ -49,6 +50,32 @@ class _PropertyListScreenState extends ConsumerState<PropertyListScreen> {
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: () => _showFilterSheet(context),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text('Logout'),
+                  content: const Text('Are you sure you want to log out?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Logout'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed == true && context.mounted) {
+                ref.read(authProvider.notifier).logout();
+              }
+            },
           ),
         ],
       ),
@@ -103,10 +130,62 @@ class _PropertyListScreenState extends ConsumerState<PropertyListScreen> {
           child: PropertyCard(
             property: prop,
             onTap: () => context.push('/properties/${prop.id}'),
+            onLongPress: () => _confirmDelete(context, prop.id, prop.priceFormatted, prop.propertyType),
           ),
         );
       },
     );
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    String id,
+    String price,
+    String type,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete listing?'),
+        content: Text(
+          'Remove the ${type.toLowerCase()} listing for $price?\nThis cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ref.read(propertyListProvider.notifier).deleteProperty(id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Listing deleted')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        String msg = 'Failed to delete listing';
+        if (e.toString().contains('403') || e.toString().contains('FORBIDDEN')) {
+          msg = 'Permission denied — only admins can delete listings';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(msg),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 
   void _showFilterSheet(BuildContext context) {

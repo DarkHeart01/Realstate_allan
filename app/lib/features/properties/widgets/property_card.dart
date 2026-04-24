@@ -17,10 +17,12 @@ class PropertyCard extends StatelessWidget {
     super.key,
     required this.property,
     required this.onTap,
+    this.onLongPress,
   });
 
   final Property property;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +33,7 @@ class PropertyCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

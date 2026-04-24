@@ -130,6 +130,14 @@ class PropertyListNotifier extends StateNotifier<PropertyListState> {
     refresh();
   }
 
+  Future<void> deleteProperty(String id) async {
+    await _dio.delete('/api/properties/$id');
+    state = state.copyWith(
+      properties: state.properties.where((p) => p.id != id).toList(),
+      total: state.total > 0 ? state.total - 1 : 0,
+    );
+  }
+
   Future<void> _fetch({required bool replace}) async {
     if (kDebugMode && const bool.fromEnvironment('USE_MOCK_DATA', defaultValue: false)) {
       await Future.delayed(const Duration(milliseconds: 500));

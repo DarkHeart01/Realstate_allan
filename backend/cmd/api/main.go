@@ -136,7 +136,7 @@ func main() {
 			r.Post("/", propHandler.Create)
 			r.Get("/{id}", propHandler.Get)
 			r.Patch("/{id}", propHandler.Update)
-			r.With(mw.Require(models.RoleSuperAdmin)).Delete("/{id}", propHandler.Delete)
+			r.Delete("/{id}", propHandler.Delete)
 
 			// Photos
 			r.Post("/{id}/photos/presign", photoHandler.Presign)

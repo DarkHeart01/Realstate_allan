@@ -1,8 +1,23 @@
+import java.util.Base64
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// Decode --dart-define values that Flutter passes as base64-encoded, comma-separated
+// entries in the "dart-defines" Gradle property.
+fun dartDefines(): Map<String, String> {
+    val raw = (project.findProperty("dart-defines") as? String) ?: return emptyMap()
+    if (raw.isBlank()) return emptyMap()
+    return raw.split(",").associate { entry ->
+        val decoded = String(Base64.getDecoder().decode(entry), Charsets.UTF_8)
+        val eq = decoded.indexOf('=')
+        if (eq >= 0) decoded.substring(0, eq) to decoded.substring(eq + 1)
+        else decoded to ""
+    }
 }
 
 android {
@@ -16,29 +31,23 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = "17"
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.realestate_app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // Expose the Maps API key passed via --dart-define=GOOGLE_MAPS_API_KEY=...
-        // to AndroidManifest.xml as a manifest placeholder.
-        val mapsApiKey = project.findProperty("GOOGLE_MAPS_API_KEY") as String? ?: ""
-        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = mapsApiKey
+        // Expose the Maps API key from --dart-define to AndroidManifest.xml.
+        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] =
+            dartDefines()["GOOGLE_MAPS_API_KEY"] ?: ""
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
     }

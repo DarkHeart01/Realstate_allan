@@ -145,6 +145,7 @@ class _Step1 extends ConsumerWidget {
               return ChoiceChip(
                 label: Text(t),
                 selected: sel,
+                showCheckmark: false,
                 onSelected: (_) =>
                     notifier.update((s) => s.copyWith(propertyType: t)),
               );

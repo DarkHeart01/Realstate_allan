@@ -17,18 +17,19 @@ void main() async {
 }
 
 /// Root application widget.
-class RealEstateApp extends StatelessWidget {
+class RealEstateApp extends ConsumerWidget {
   const RealEstateApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
     return MaterialApp.router(
       title: 'RealEstate Platform',
       debugShowCheckedModeBanner: false,
       theme: buildLightTheme(),
       darkTheme: buildDarkTheme(),
       themeMode: ThemeMode.system,
-      routerConfig: appRouter,
+      routerConfig: router,
     );
   }
 }

@@ -237,6 +237,21 @@ class PropertyFormNotifier extends StateNotifier<PropertyFormState> {
 
   /// Submit the form. Creates the property, then uploads pending photos.
   Future<void> submit() async {
+    // Client-side validation before hitting the network.
+    if (state.ownerName.trim().isEmpty) {
+      state = state.copyWith(submitError: 'Owner name is required (fill in Step 3)');
+      return;
+    }
+    if (state.ownerContact.trim().isEmpty) {
+      state = state.copyWith(submitError: 'Owner contact is required (fill in Step 3)');
+      return;
+    }
+    final parsedPrice = double.tryParse(state.price);
+    if (parsedPrice == null || parsedPrice <= 0) {
+      state = state.copyWith(submitError: 'Price must be greater than 0 (fill in Step 3)');
+      return;
+    }
+
     state = state.copyWith(isSubmitting: true, submitError: null);
 
     try {
@@ -266,7 +281,11 @@ class PropertyFormNotifier extends StateNotifier<PropertyFormState> {
         await uploadPhoto(propertyId, i);
       }
     } catch (e) {
-      state = state.copyWith(isSubmitting: false, submitError: e.toString());
+      String msg = e.toString();
+      if (e is DioException) {
+        msg = e.response?.data?['message'] as String? ?? 'Submit failed';
+      }
+      state = state.copyWith(isSubmitting: false, submitError: msg);
     }
   }
 
