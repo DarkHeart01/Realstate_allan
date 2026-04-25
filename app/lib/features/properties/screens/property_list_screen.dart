@@ -57,16 +57,16 @@ class _PropertyListScreenState extends ConsumerState<PropertyListScreen> {
             onPressed: () async {
               final confirmed = await showDialog<bool>(
                 context: context,
-                builder: (_) => AlertDialog(
+                builder: (dialogContext) => AlertDialog(
                   title: const Text('Logout'),
                   content: const Text('Are you sure you want to log out?'),
                   actions: [
                     TextButton(
-                      onPressed: () => Navigator.pop(context, false),
+                      onPressed: () => Navigator.of(dialogContext).pop(false),
                       child: const Text('Cancel'),
                     ),
                     FilledButton(
-                      onPressed: () => Navigator.pop(context, true),
+                      onPressed: () => Navigator.of(dialogContext).pop(true),
                       child: const Text('Logout'),
                     ),
                   ],
@@ -145,19 +145,19 @@ class _PropertyListScreenState extends ConsumerState<PropertyListScreen> {
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete listing?'),
         content: Text(
           'Remove the ${type.toLowerCase()} listing for $price?\nThis cannot be undone.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
             child: const Text('Cancel'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Delete'),
           ),
         ],
