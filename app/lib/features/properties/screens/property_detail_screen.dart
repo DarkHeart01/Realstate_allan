@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../models/property.dart';
 import '../providers/property_detail_provider.dart';
+import '../providers/property_list_provider.dart';
 import '../widgets/share_bottom_sheet.dart';
 
 final _inrFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
@@ -31,16 +32,51 @@ class PropertyDetailScreen extends ConsumerWidget {
   }
 }
 
-class _PropertyDetail extends StatefulWidget {
+class _PropertyDetail extends ConsumerStatefulWidget {
   const _PropertyDetail({required this.property});
   final Property property;
 
   @override
-  State<_PropertyDetail> createState() => _PropertyDetailState();
+  ConsumerState<_PropertyDetail> createState() => _PropertyDetailState();
 }
 
-class _PropertyDetailState extends State<_PropertyDetail> {
+class _PropertyDetailState extends ConsumerState<_PropertyDetail> {
   int _photoIndex = 0;
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete listing?'),
+        content: const Text('This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await ref.read(propertyListProvider.notifier).deleteProperty(widget.property.id);
+      if (context.mounted) context.pop();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().contains('403') ? 'Permission denied' : 'Delete failed'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +111,13 @@ class _PropertyDetailState extends State<_PropertyDetail> {
             ),
             IconButton(
               icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Edit',
               onPressed: () => context.push('/properties/${prop.id}/edit'),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Delete',
+              onPressed: () => _confirmDelete(context),
             ),
           ],
         ),
