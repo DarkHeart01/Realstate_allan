@@ -383,7 +383,7 @@ func (h *PropertiesHandler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 // ── DELETE /api/properties/{id} ───────────────────────────────────────────────
-// Access is enforced by mw.Require(models.RoleSuperAdmin) at the router level.
+// Open to all authenticated users — any broker can delete any listing.
 
 func (h *PropertiesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")

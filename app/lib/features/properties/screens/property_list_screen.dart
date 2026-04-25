@@ -174,13 +174,9 @@ class _PropertyListScreenState extends ConsumerState<PropertyListScreen> {
       }
     } catch (e) {
       if (context.mounted) {
-        String msg = 'Failed to delete listing';
-        if (e.toString().contains('403') || e.toString().contains('FORBIDDEN')) {
-          msg = 'Permission denied — only admins can delete listings';
-        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(msg),
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );

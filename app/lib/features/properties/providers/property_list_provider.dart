@@ -1,4 +1,5 @@
 // app/lib/features/properties/providers/property_list_provider.dart
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -135,7 +136,13 @@ class PropertyListNotifier extends StateNotifier<PropertyListState> {
   }
 
   Future<void> deleteProperty(String id) async {
-    await _dio.delete('/api/properties/$id');
+    try {
+      await _dio.delete('/api/properties/$id');
+    } on DioException catch (e) {
+      final msg = e.response?.data?['message'] as String? ??
+          'Delete failed (HTTP ${e.response?.statusCode ?? 'no response'})';
+      throw Exception(msg);
+    }
     state = state.copyWith(
       properties: state.properties.where((p) => p.id != id).toList(),
       total: state.total > 0 ? state.total - 1 : 0,

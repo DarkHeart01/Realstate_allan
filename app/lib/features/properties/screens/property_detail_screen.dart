@@ -70,7 +70,7 @@ class _PropertyDetailState extends ConsumerState<_PropertyDetail> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().contains('403') ? 'Permission denied' : 'Delete failed'),
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
