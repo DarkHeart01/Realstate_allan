@@ -101,10 +101,11 @@ func main() {
 	r.Use(chimiddleware.Timeout(30 * time.Second))
 
 	corsMiddleware := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
-		AllowCredentials: true,
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
+		// AllowCredentials must be false when AllowedOrigins is "*" — browsers
+		// reject the combination. Auth is handled via Bearer tokens, not cookies.
 	})
 	r.Use(corsMiddleware.Handler)
 
