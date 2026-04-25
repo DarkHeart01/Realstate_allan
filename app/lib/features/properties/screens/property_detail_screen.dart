@@ -1,5 +1,6 @@
 // app/lib/features/properties/screens/property_detail_screen.dart
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -208,29 +209,32 @@ class _PropertyDetailState extends ConsumerState<_PropertyDetail> {
                 // Embedded map
                 Text('Location', style: Theme.of(context).textTheme.labelLarge),
                 const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: SizedBox(
-                    height: 180,
-                    child: GoogleMap(
-                      initialCameraPosition: CameraPosition(
-                        target: LatLng(prop.locationLat, prop.locationLng),
-                        zoom: 15,
-                      ),
-                      markers: {
-                        Marker(
-                          markerId: MarkerId(prop.id),
-                          position: LatLng(prop.locationLat, prop.locationLng),
+                if (kIsWeb)
+                  _WebLatLng(lat: prop.locationLat, lng: prop.locationLng)
+                else
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: SizedBox(
+                      height: 180,
+                      child: GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: LatLng(prop.locationLat, prop.locationLng),
+                          zoom: 15,
                         ),
-                      },
-                      zoomControlsEnabled: false,
-                      scrollGesturesEnabled: false,
-                      rotateGesturesEnabled: false,
-                      tiltGesturesEnabled: false,
-                      myLocationButtonEnabled: false,
+                        markers: {
+                          Marker(
+                            markerId: MarkerId(prop.id),
+                            position: LatLng(prop.locationLat, prop.locationLng),
+                          ),
+                        },
+                        zoomControlsEnabled: false,
+                        scrollGesturesEnabled: false,
+                        rotateGesturesEnabled: false,
+                        tiltGesturesEnabled: false,
+                        myLocationButtonEnabled: false,
+                      ),
                     ),
                   ),
-                ),
                 const SizedBox(height: 32),
               ],
             ),
@@ -269,6 +273,28 @@ class _PropertyDetailState extends ConsumerState<_PropertyDetail> {
           ),
           Expanded(child: Text(value)),
         ],
+      ),
+    );
+  }
+}
+
+class _WebLatLng extends StatelessWidget {
+  const _WebLatLng({required this.lat, required this.lng});
+  final double lat;
+  final double lng;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 60,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '$lat, $lng',
+        style: Theme.of(context).textTheme.bodyMedium,
       ),
     );
   }

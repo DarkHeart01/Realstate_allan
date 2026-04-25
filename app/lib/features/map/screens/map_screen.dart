@@ -1,4 +1,5 @@
 // app/lib/features/map/screens/map_screen.dart
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -35,6 +36,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       zoom: _zoom,
       onTap: (p) => setState(() => _selected = p),
     );
+
+    if (kIsWeb) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.map_outlined, size: 64, color: Colors.grey),
+              SizedBox(height: 12),
+              Text('Map view is not available on web.\nUse the mobile app to explore properties on the map.',
+                  textAlign: TextAlign.center),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       body: Stack(

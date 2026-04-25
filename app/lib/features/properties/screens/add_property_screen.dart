@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -272,33 +273,44 @@ class _Step2State extends ConsumerState<_Step2> {
       child: Column(
         children: [
           // ── Map picker ─────────────────────────────────────────────────
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                height: 240,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      target: LatLng(_currentLat, _currentLng),
-                      zoom: 15,
+          if (!kIsWeb)
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  height: 240,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: GoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target: LatLng(_currentLat, _currentLng),
+                        zoom: 15,
+                      ),
+                      onMapCreated: (ctrl) => _mapController = ctrl,
+                      onCameraIdle: () {},
+                      onCameraMove: _onCameraIdle,
+                      zoomControlsEnabled: true,
+                      myLocationButtonEnabled: true,
+                      myLocationEnabled: true,
                     ),
-                    onMapCreated: (ctrl) => _mapController = ctrl,
-                    onCameraIdle: () {},
-                    onCameraMove: _onCameraIdle,
-                    zoomControlsEnabled: true,
-                    myLocationButtonEnabled: true,
-                    myLocationEnabled: true,
                   ),
                 ),
+                // Centre pin
+                const IgnorePointer(
+                  child: Icon(Icons.location_pin, size: 40, color: Colors.red),
+                ),
+              ],
+            )
+          else
+            Container(
+              height: 60,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
               ),
-              // Centre pin
-              const IgnorePointer(
-                child: Icon(Icons.location_pin, size: 40, color: Colors.red),
-              ),
-            ],
-          ),
+              alignment: Alignment.center,
+              child: const Text('Enter coordinates manually below'),
+            ),
           if (_locationLabel.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
